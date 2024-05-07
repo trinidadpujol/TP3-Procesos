@@ -53,7 +53,9 @@ int main(int argc, char **argv)
                 close(fd[i][1]); 
 				exit(0);
 			} else if (i == (start - 1 + n) % n) {    // El último proceso
+				close(fd[(i - 1 + n) % n][1]);
 				read(fd[(i - 1 + n) % n][0], &buffer, sizeof(buffer));
+				close(fd[(i - 1 + n) % n][0]);
 				printf("Soy el hijo %d, recibi un %d del hijo %d, lo incremento a %d y se lo mando al padre\n", i, buffer[0], (i - 1 + n) % n, buffer[0]+1);
 				buffer[0]++; 
 				close(fd[i][0]);
@@ -61,7 +63,9 @@ int main(int argc, char **argv)
 				close(fd[i][1]); 
 				exit(0);
 			} else {     // Los procesos intermedios
+				close(fd[(i - 1 + n) % n][1]);
 				read(fd[(i - 1 + n) % n][0], &buffer, sizeof(buffer));
+				close(fd[(i - 1 + n) % n][0]);
                 printf("Soy el hijo %d, recibi un %d del hijo %d, lo incremento a %d y se lo mando al hijo %d\n", i, buffer[0], (i - 1 + n) % n, buffer[0]+1, (i + 1) % n);
                 buffer[0]++;
 				close(fd[i][0]); 
@@ -83,9 +87,10 @@ int main(int argc, char **argv)
     }
 
     // El proceso padre imprime el mensaje final por salida estándar
+	close(fd[(start - 1 + n) % n][1]);
 	read(fd[(start - 1 + n) % n][0], &buffer, sizeof(buffer));
-	printf("Soy el padre, recibi un %d del hijo %d, termino la comunicacion\n", buffer[0], (start - 1 + n) % n);
 	close(fd[(start - 1 + n) % n][0]);
+	printf("Soy el padre, recibi un %d del hijo %d, termino la comunicacion\n", buffer[0], (start - 1 + n) % n);
 	
 	return 0;
 }

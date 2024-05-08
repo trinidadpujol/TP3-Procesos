@@ -29,7 +29,7 @@ void execute_command(char *command) {
     cmd_args[arg_count] = NULL;
     execvp(cmd_args[0], cmd_args);   // execute command
     // if execvp returns, there was an error
-    perror("execvp");
+    perror("Execvp Error");
     exit(1);
 }
 

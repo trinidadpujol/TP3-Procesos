@@ -11,37 +11,74 @@ int main() {
     char command[256];
     char *commands[MAX_COMMANDS];
     int command_count = 0;
+    int pipes[MAX_COMMANDS][2];
 
-    while (1) 
-    {
+    while (1) {
+
         printf("Shell> ");
-        
-        /*Reads a line of input from the user from the standard input (stdin) and stores it in the variable command */
         fgets(command, sizeof(command), stdin);
-        
-        /* Removes the newline character (\n) from the end of the string stored in command, if present. 
-           This is done by replacing the newline character with the null character ('\0').
-           The strcspn() function returns the length of the initial segment of command that consists of 
-           characters not in the string specified in the second argument ("\n" in this case). */
         command[strcspn(command, "\n")] = '\0';
 
-        /* Tokenizes the command string using the pipe character (|) as a delimiter using the strtok() function. 
-           Each resulting token is stored in the commands[] array. 
-           The strtok() function breaks the command string into tokens (substrings) separated by the pipe character |. 
-           In each iteration of the while loop, strtok() returns the next token found in command. 
-           The tokens are stored in the commands[] array, and command_count is incremented to keep track of the number of tokens found. */
         char *token = strtok(command, "|");
-        while (token != NULL) 
-        {
+        while (token != NULL) {
             commands[command_count++] = token;
             token = strtok(NULL, "|");
         }
 
-        /* You should start programming from here... */
-        for (int i = 0; i < command_count; i++) 
-        {
-            printf("Command %d: %s\n", i, commands[i]);
-        }    
+        // Create pipes
+        for (int i = 0; i < command_count - 1; i++) {
+            if (pipe(pipes[i]) == -1) { 
+                perror("Pipe error");
+                exit(1);
+            }
+        }
+
+        // Create children
+        for (int i = 0; i < command_count; i++) {
+            int pid = fork(); 
+
+            if (pid == -1){
+                perror("Fork error");
+                exit(1);
+            
+            } else if (pid == 0){
+                if (i > 0) { //not the first command
+                    dup2(pipes[i - 1][0], STDIN_FILENO); 
+                }
+
+                if (i < command_count - 1) { //not the last command
+                    dup2(pipes[i][1], STDOUT_FILENO); 
+                }
+
+                for (int j = 0; j < command_count - 1; j++) { //close all pipes
+                    close(pipes[j][0]);
+                    close(pipes[j][1]);
+                }
+
+                char *cmd_args[20];
+                int arg_count = 0;
+            
+                get_args(commands[i], cmd_args, &arg_count);  
+                execvp(cmd_args[0], cmd_args); // Execute command
+                
+                perror("Execvp error");
+                exit(1);
+            }
+    
+        }
+
+        // Close all pipes
+        for (int i = 0; i < command_count - 1; i++) { 
+            close(pipes[i][0]); 
+            close(pipes[i][1]); 
+        }
+
+        // Wait for all children
+        for (int i = 0; i < command_count; i++) { 
+            wait(NULL);
+        }
+
+        command_count = 0;
     }
     return 0;
 }

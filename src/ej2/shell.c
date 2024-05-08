@@ -5,6 +5,33 @@
 #include <string.h>
 
 #define MAX_COMMANDS 200
+#define MAX_ARGS 20
+
+
+void execute_command(char *command) {
+
+    char *cmd_args[MAX_ARGS];
+    int arg_count = 0;
+    char *token;
+
+    token = strtok(command, " ");
+    while (token != NULL && arg_count < MAX_ARGS - 1) {
+        // Remove quotes from token
+        char *quote_pos;
+        for (int i = 0; i < 2; i++) { 
+            while ((quote_pos = strchr(token, '\"')) != NULL) {
+                memmove(quote_pos, quote_pos + 1, strlen(quote_pos)); 
+            }
+        }
+        cmd_args[arg_count++] = token;
+        token = strtok(NULL, " ");
+    }
+    cmd_args[arg_count] = NULL;
+    execvp(cmd_args[0], cmd_args);   //execute command
+    perror("execvp");
+    exit(1);
+}
+
 
 int main() {
 
@@ -54,15 +81,7 @@ int main() {
                     close(pipes[j][0]);
                     close(pipes[j][1]);
                 }
-
-                char *cmd_args[20];
-                int arg_count = 0;
-            
-                get_args(commands[i], cmd_args, &arg_count);  
-                execvp(cmd_args[0], cmd_args); // Execute command
-                
-                perror("Execvp error");
-                exit(1);
+                execute_command(commands[i]);  //gets args and executes command
             }
     
         }
